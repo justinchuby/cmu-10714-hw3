@@ -243,9 +243,11 @@ class NDArray:
         ### BEGIN YOUR SOLUTION
         if prod(self.shape) != prod(new_shape):
             raise ValueError("Product of current shape is not equal to the product of the new shape")
-        if not self.is_compact():
-            raise ValueError("The matrix is not compact")
-        return self.as_strided(new_shape, self.compact_strides(new_shape))
+        # TODO: Should probably use as_strided
+        # TODO: Understand striding better for reshaping
+        return NDArray.make(
+            new_shape, strides=None, device=self.device, handle=self._handle
+        )
         ### END YOUR SOLUTION
 
     def permute(self, new_axes):
