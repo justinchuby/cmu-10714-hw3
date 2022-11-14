@@ -246,13 +246,13 @@ class NDArray:
             raise ValueError(
                 "Product of current shape is not equal to the product of the new shape"
             )
+        if not self.is_compact():
+            raise ValueError(
+                "Matrix is not compact"
+            )
         # Make sure we can reshape without reallocating
         # TODO: I am going to re-allocate whenever self is non-contiguous
         # But I need to do better to avoid allocation
-        if not self.is_compact():
-            compacted = self.compact()
-            compact_strides = NDArray.compact_strides(new_shape)
-            return compacted.as_strided(new_shape, compact_strides)
 
         compact_strides = NDArray.compact_strides(new_shape)
         return self.as_strided(new_shape, compact_strides)
@@ -278,10 +278,12 @@ class NDArray:
         """
 
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        new_shape = tuple([self.shape[i] for i in new_axes])
+        new_strides = tuple([self.strides[i] for i in new_axes])
+        return self.as_strided(new_shape, new_strides)
         ### END YOUR SOLUTION
 
-    def broadcast_to(self, new_shape):
+    def broadcast_to(self, new_shape: Tuple[int]):
         """
         Broadcast an array to a new shape.  new_shape's elements must be the
         same as the original shape, except for dimensions in the self where
@@ -299,7 +301,17 @@ class NDArray:
         """
 
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        assert len(new_shape) >= len(self.shape)
+        for self_size, new_size in zip(self.shape, new_shape):
+            assert self_size == 1 or self_size == new_size
+        new_strides = []
+        for i in range(len(new_shape)):
+            # TODO: Do I set zeros like this?
+            if i >= len(self.strides) or self.shape[i] == 1:
+                new_strides.append(0)
+            else:
+                new_strides.append(self.strides[i])
+        return self.as_strided(new_shape, new_strides)
         ### END YOUR SOLUTION
 
     ### Get and set elements
@@ -310,7 +322,7 @@ class NDArray:
         if start == None:
             start = 0
         if start < 0:
-            start = self.shape[dim]
+            start = self.shape[dim] + start
         if stop == None:
             stop = self.shape[dim]
         if stop < 0:
