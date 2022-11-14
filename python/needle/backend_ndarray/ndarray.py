@@ -1,6 +1,7 @@
 import operator
 import math
 from functools import reduce
+from typing import Tuple
 import numpy as np
 from . import ndarray_backend_numpy
 from . import ndarray_backend_cpu
@@ -32,15 +33,15 @@ class BackendDevice:
     def randn(self, *shape, dtype="float32"):
         # note: numpy doesn't support types within standard random routines, and
         # .astype("float32") does work if we're generating a singleton
-        return NDArray(numpy.random.randn(*shape).astype(dtype), device=self)
+        return NDArray(np.random.randn(*shape).astype(dtype), device=self)
 
     def rand(self, *shape, dtype="float32"):
         # note: numpy doesn't support types within standard random routines, and
         # .astype("float32") does work if we're generating a singleton
-        return NDArray(numpy.random.rand(*shape).astype(dtype), device=self)
+        return NDArray(np.random.rand(*shape).astype(dtype), device=self)
 
     def one_hot(self, n, i, dtype="float32"):
-        return NDArray(numpy.eye(n, dtype=dtype)[i], device=self)
+        return NDArray(np.eye(n, dtype=dtype)[i], device=self)
 
     def empty(self, shape, dtype="float32"):
         dtype = "float32" if dtype is None else dtype
@@ -120,7 +121,7 @@ class NDArray:
         self._handle = other._handle
 
     @staticmethod
-    def compact_strides(shape):
+    def compact_strides(shape) -> Tuple[int]:
         """Utility function to compute compact strides"""
         stride = 1
         res = []
@@ -196,7 +197,7 @@ class NDArray:
             self._handle, self.shape, self.strides, self._offset
         )
 
-    def is_compact(self):
+    def is_compact(self) -> bool:
         """Return true if array is compact in memory and internal size equals product
         of the shape dimensions"""
         return (
@@ -245,11 +246,16 @@ class NDArray:
             raise ValueError(
                 "Product of current shape is not equal to the product of the new shape"
             )
-        # TODO: Should probably use as_strided
-        # TODO: Understand striding better for reshaping
-        return NDArray.make(
-            new_shape, strides=None, device=self.device, handle=self._handle
-        )
+        # Make sure we can reshape without reallocating
+        # TODO: I am going to re-allocate whenever self is non-contiguous
+        # But I need to do better to avoid allocation
+        if not self.is_compact():
+            compacted = self.compact()
+            compact_strides = NDArray.compact_strides(new_shape)
+            return compacted.as_strided(new_shape, compact_strides)
+
+        compact_strides = NDArray.compact_strides(new_shape)
+        return self.as_strided(new_shape, compact_strides)
         ### END YOUR SOLUTION
 
     def permute(self, new_axes):
