@@ -51,12 +51,9 @@ namespace {
 // to gradually up the index.
 void CarryCounter(std::vector<uint32_t> counters, std::vector<uint32_t> shapes) {
   for (size_t i = counters.size() - 1; i > 0; --i) {
-    if (counters[i] == shapes[i] - 1) {
+    if (counters[i] == shapes[i]) {
       counters[i] = 0;
       counters[i - 1] += 1;
-    } else {
-      counters[i] += 1;
-      break;
     }
   }
 }
@@ -68,7 +65,8 @@ std::function<size_t()> CreateIndexGenerator(
   std::vector<uint32_t> strides,
 ) {
   assert(shapes.size() == strides.size());
-  std::vectors<uint32_t> counters(shapes.size());
+  auto dims = shapes.size();
+  std::vectors<uint32_t> counters(dims);
   return [counters, shapes, strides]() mutable {
     if (counters[0] == shapes[0]) {
       return -1;
@@ -77,6 +75,7 @@ std::function<size_t()> CreateIndexGenerator(
     for (size_t i = 0; i < shapes.size(); ++i) {
       index += counters[i] * strides[i];
     }
+    counters[dims-1] += 1;
     CarryCounter(counters, shapes);
     return index;
   };
@@ -203,6 +202,7 @@ void ScalarAdd(const AlignedArray& a, scalar_t val, AlignedArray* out) {
  */
 
 /// BEGIN YOUR SOLUTION
+// https://stackoverflow.com/questions/3735398/operator-as-template-parameter
 template<typename Op>
 void EwiseOpUnary(const AlignedArray& a, AlignedArray* out) {
 {
