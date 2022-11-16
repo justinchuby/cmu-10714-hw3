@@ -2,6 +2,8 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
+#include <vector>
+
 #include <cmath>
 #include <iostream>
 #include <stdexcept>
@@ -43,8 +45,43 @@ void Fill(AlignedArray* out, scalar_t val) {
   }
 }
 
+namespace {
 
+// The first index is the most slow changing one. We just need a carry mechanism
+// to gradually up the index.
+void CarryCounter(std::vector<uint32_t> counters, std::vector<uint32_t> shapes) {
+  for (size_t i = counters.size() - 1; i > 0; --i) {
+    if (counters[i] == shapes[i] - 1) {
+      counters[i] = 0;
+      counters[i - 1] += 1;
+    } else {
+      counters[i] += 1;
+      break;
+    }
+  }
+}
 
+// A function that returns a generator that computes the next matrix index based
+// on shapes and strides
+std::function<size_t()> CreateIndexGenerator(
+  std::vector<uint32_t> shapes,
+  std::vector<uint32_t> strides,
+) {
+  assert(shapes.size() == strides.size());
+  std::vectors<uint32_t> counters(shapes.size());
+  return [counters, shapes, strides]() mutable {
+    if (counters[0] == shapes[0]) {
+      return -1;
+    }
+    size_t index = 0;
+    for (size_t i = 0; i < shapes.size(); ++i) {
+      index += counters[i] * strides[i];
+    }
+    CarryCounter(counters, shapes);
+    return index;
+  };
+}
+} // namespace
 
 void Compact(const AlignedArray& a, AlignedArray* out, std::vector<uint32_t> shape,
              std::vector<uint32_t> strides, size_t offset) {
@@ -63,7 +100,14 @@ void Compact(const AlignedArray& a, AlignedArray* out, std::vector<uint32_t> sha
    *  function will implement here, so we won't repeat this note.)
    */
   /// BEGIN YOUR SOLUTION
-  
+  auto index_generator = CreateIndexGenerator(shape, strides);
+  unit32_t index = 0;
+  size_t counter = 0;
+  while (index != -1) {
+    out->ptr[counter] = a.ptr[index + offset];
+    index = index_generator();
+    counter++;
+  }
   /// END YOUR SOLUTION
 }
 
@@ -80,7 +124,14 @@ void EwiseSetitem(const AlignedArray& a, AlignedArray* out, std::vector<uint32_t
    *   offset: offset of the *out* array (not a, which has zero offset, being compact)
    */
   /// BEGIN YOUR SOLUTION
-  
+  auto index_generator = CreateIndexGenerator(shape, strides);
+  unit32_t index = 0;
+  size_t counter = 0;
+  while (index != -1) {
+    out->ptr[offset + index] = a.ptr[counter];
+    index = index_generator();
+    counter++;
+  }
   /// END YOUR SOLUTION
 }
 
@@ -101,7 +152,14 @@ void ScalarSetitem(const size_t size, scalar_t val, AlignedArray* out, std::vect
    */
 
   /// BEGIN YOUR SOLUTION
-  
+  auto index_generator = CreateIndexGenerator(shape, strides);
+  unit32_t index = 0;
+  size_t counter = 0;
+  while (index != -1) {
+    assert(counter < size_t);
+    out->ptr[offset + index] = val;
+    index = index_generator();
+  }
   /// END YOUR SOLUTION
 }
 
@@ -164,7 +222,7 @@ void Matmul(const AlignedArray& a, const AlignedArray& b, AlignedArray* out, uin
    */
 
   /// BEGIN YOUR SOLUTION
-  
+
   /// END YOUR SOLUTION
 }
 
@@ -194,7 +252,7 @@ inline void AlignedDot(const float* __restrict__ a,
   out = (float*)__builtin_assume_aligned(out, TILE * ELEM_SIZE);
 
   /// BEGIN YOUR SOLUTION
-  
+
   /// END YOUR SOLUTION
 }
 
@@ -220,7 +278,7 @@ void MatmulTiled(const AlignedArray& a, const AlignedArray& b, AlignedArray* out
    *
    */
   /// BEGIN YOUR SOLUTION
-  
+
   /// END YOUR SOLUTION
 }
 
@@ -235,7 +293,7 @@ void ReduceMax(const AlignedArray& a, AlignedArray* out, size_t reduce_size) {
    */
 
   /// BEGIN YOUR SOLUTION
-  
+
   /// END YOUR SOLUTION
 }
 
@@ -250,7 +308,7 @@ void ReduceSum(const AlignedArray& a, AlignedArray* out, size_t reduce_size) {
    */
 
   /// BEGIN YOUR SOLUTION
-  
+
   /// END YOUR SOLUTION
 }
 
