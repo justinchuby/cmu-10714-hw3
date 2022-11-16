@@ -203,6 +203,48 @@ void ScalarAdd(const AlignedArray& a, scalar_t val, AlignedArray* out) {
  */
 
 /// BEGIN YOUR SOLUTION
+template<typename Op>
+void EwiseOpUnary(const AlignedArray& a, AlignedArray* out) {
+{
+  Op op;
+  for (size_t i = 0; i < a.size; i++) {
+    out->ptr[i] = op(a.ptr[i]);
+  }
+}
+
+template<typename Op>
+void EwiseOpBinary(const AlignedArray& a, const AlignedArray& b, AlignedArray* out) {
+{
+  Op op;
+  for (size_t i = 0; i < a.size; i++) {
+    out->ptr[i] = op(a.ptr[i], b.ptr[i]);
+  }
+}
+
+template<typename Op>
+void ScalarOp(const AlignedArray& a, scalar_t val, AlignedArray* out) {
+  /**
+   * Set entries in out to be the sum of corresponding entry in a plus the scalar val.
+   */
+  for (size_t i = 0; i < a.size; i++) {
+    out->ptr[i] = op(a.ptr[i], val);
+  }
+}
+
+auto EwiseMul = EwiseOpBinary<std::multiplies<scalar_t>>;
+auto EwiseDiv = EwiseOpBinary<std::divides<scalar_t>>;
+auto EwiseMaximum = EwiseOpBinary<std::max<scalar_t>>;
+auto EwiseEq = EwiseOpBinary<std::equal_to<scalar_t>>;
+auto EwiseGe = EwiseOpBinary<std::greater_equal<scalar_t>>;
+auto EwiseLog = EwiseOpUnary<std::log<scalar_t>>;
+auto EwiseExp = EwiseOpUnary<std::exp<scalar_t>>;
+auto EwiseTanh = EwiseOpUnary<std::tanh<scalar_t>>;
+auto ScalarMul = ScalarOp<std::multiplies<scalar_t>>;
+auto ScalarDiv = ScalarOp<std::divides<scalar_t>>;
+auto ScalarPower = ScalarOp<std::pow<scalar_t>>;
+auto ScalarMaximum = ScalarOp<std::max<scalar_t>>;
+auto ScalarEq = ScalarOp<std::equal_to<scalar_t>>;
+auto ScalarGe = ScalarOp<std::greater_equal<scalar_t>>;
 
 /// END YOUR SOLUTION
 
