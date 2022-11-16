@@ -247,9 +247,7 @@ class NDArray:
                 "Product of current shape is not equal to the product of the new shape"
             )
         if not self.is_compact():
-            raise ValueError(
-                "Matrix is not compact"
-            )
+            raise ValueError("Matrix is not compact")
         # Make sure we can reshape without reallocating
         # TODO: I am going to re-allocate whenever self is non-contiguous
         # But I need to do better to avoid allocation
@@ -344,10 +342,12 @@ class NDArray:
         three elements .start .stop .step), which can be None or have negative
         entries, so for simplicity we wrote the code for you to convert these
         to always be a tuple of slices, one of each dimension.
+
         For this tuple of slices, return an array that subsets the desired
         elements.  As before, this can be done entirely through compute a new
         shape, stride, and offset for the new "view" into the original array,
-        pointing to the same memory
+        pointing to the same memory.
+
         Raises:
             AssertionError if a slice has negative size or step, or if number
             of slices is not equal to the number of dimension (the stub code
@@ -366,15 +366,16 @@ class NDArray:
         if not isinstance(idxs, tuple):
             idxs = (idxs,)
         idxs = tuple(
-            [
-                self.process_slice(s, i) if isinstance(s, slice) else slice(s, s + 1, 1)
-                for i, s in enumerate(idxs)
-            ]
+            self.process_slice(s, i) if isinstance(s, slice) else slice(s, s + 1, 1)
+            for i, s in enumerate(idxs)
         )
         assert len(idxs) == self.ndim, "Need indexes equal to number of dimensions"
 
         ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
+        # Compute the offset first
+
+        # Depending on the stride in the slice, modify the strides
+        # Compute the resulting shape
         ### END YOUR SOLUTION
 
     def __setitem__(self, idxs, other):
